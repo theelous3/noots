@@ -54,7 +54,7 @@ def forget(category, index):
     data = _yaml_r()
     try:
         del data[category][index-1]
-    except IndexError:
+    except (KeyError, IndexError, TypeError):
         print('There is no note {} {}'.format(category,
                                               index))
         return
@@ -114,6 +114,7 @@ def _yaml_r():
         temp = open(NOOTS_LOC, 'w+')
         temp.close()
         _yaml_r()
+
 
 def _yaml_w(data):
     with open(NOOTS_LOC, 'w') as noots_file:
