@@ -10,7 +10,7 @@ def show_notes():
     Display the users saved notes, if any.
 
     """
-    data = _yaml_r()
+    data = _yaml_r() or {}
     categories = sorted([category for category in data])
     if data:
         for category in categories:
@@ -107,9 +107,13 @@ def clear_all():
 
 
 def _yaml_r():
-    with open(NOOTS_LOC, 'r') as noots_file:
-        return yaml.load(noots_file)
-
+    try:
+        with open(NOOTS_LOC, 'r') as noots_file:
+            return yaml.load(noots_file)
+    except FileNotFoundError:
+        temp = open(NOOTS_LOC, 'w+')
+        temp.close()
+        _yaml_r()
 
 def _yaml_w(data):
     with open(NOOTS_LOC, 'w') as noots_file:
