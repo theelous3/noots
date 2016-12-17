@@ -61,12 +61,8 @@ def forget(category, index):
                                               index))
         return
     else:
-        cleanup = []
-        for heading in data:
-            if data[heading] == []:
-                cleanup.append(heading)
-        for item in cleanup:
-            del data[heading]
+        if data[category] == []:
+            del data[category]
     _yaml_w(data)
 
 
