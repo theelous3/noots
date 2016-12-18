@@ -69,3 +69,5 @@ You will be prompted with a Y/N and given a chance to review your notes before t
 ## Licence
 
 Do whatever you want with noots.
+
+Shoutout to Akuli for guidance through the disaster that is argparse. What a terrible module.
