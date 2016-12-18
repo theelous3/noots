@@ -30,6 +30,8 @@ Here's a fancy asciicast of noots in action:
 2. Place it somewhere that's in your bash's $PATH. Either /bin, /usr/bin or ~/bin
 3. Add this line to your .bashrc alias section (which is probably in ~/) -> alias noots='noots.py'
 
+noots requires python3.x and PyYAML.
+
 That should do it. If there are issues, just chmod +x noots.py and it'll probably do the trick.
 
 ## Usage
