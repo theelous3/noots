@@ -4,6 +4,7 @@ import argparse
 import os.path
 import yaml
 
+
 NOOTS_LOC = os.path.join(os.path.expanduser('~'), 'noots.yaml')
 
 
@@ -104,6 +105,12 @@ def clear_all():
         return
 
 
+def noots_noots():
+    print('\n   (o<= noot noot!')
+    print('   //\\')
+    print('   V_/_\n')
+
+
 def _yaml_r():
     try:
         with open(NOOTS_LOC, 'r') as noots_file:
@@ -118,14 +125,15 @@ def _yaml_w(data):
     with open(NOOTS_LOC, 'w') as noots_file:
         yaml.dump(data, noots_file, indent=4, default_flow_style=False)
 
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(
     description="""
-    noots is a cli note taking thing for those who want 
-    to view, add, remove and modify their notes quickly and from 
+    noots is a cli note taking thing for those who want
+    to view, add, remove and modify their notes quickly and from
     any directory in their system through their terminal.
-    
+
     Read the docs at
     """
                                      )
@@ -154,6 +162,9 @@ if __name__ == '__main__':
     clear_parser = subparsers.add_parser('clear')
     clear_parser.set_defaults(func='clear')
 
+    noots_parser = subparsers.add_parser('noots')
+    noots_parser.set_defaults(func='noots')
+
     args = parser.parse_args()
 
     if args.sub_name is None:
@@ -169,3 +180,6 @@ if __name__ == '__main__':
 
     elif args.func == 'clear':
         clear_all()
+
+    elif args.func == 'noots':
+        noots_noots()
