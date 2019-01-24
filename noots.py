@@ -1,32 +1,54 @@
 #!/usr/bin/env python3
 
-import argparse
+import click
 import os.path
 import yaml
 
 
-NOOTS_LOC = os.path.join(os.path.expanduser('~'), 'noots.yaml')
+_NOOTS_LOC = os.path.join(os.path.expanduser('~'), 'noots.yaml')
 
 
-def show_notes():
+@click.group(invoke_without_command=True)
+@click.pass_context
+@click.option('-p', '--pager', is_flag=True)
+def cli(ctx, pager):
+    if ctx.invoked_subcommand is None:
+        if pager:
+            show_notes(pager=True)
+        else:
+            show_notes()
+
+
+def show_notes(pager=False):
     """
     Display the users saved notes, if any.
-
     """
     data = _yaml_r() or {}
     categories = sorted([category for category in data])
+
+    output = []
+
     if data:
         for category in categories:
-            print('\x1b[3;47;40m' + category + ':' + '\x1b[0m')
+            output.append(click.style(category, reverse=True))
             for index, item in enumerate(data[category], start=1):
-                print(' '*3, str(index) + ':', item)
+                output.append(' '*3 + str(index) + ': ' + item)
+        else:
+            if pager:
+                click.echo_via_pager('\n'.join(output))
+            else:
+                for line in output:
+                    click.echo(line)
     else:
-        print("You don't have any saved notes!")
+        click.echo("You don't have any saved notes!")
 
 
-def remember(category, note):
+@cli.command()
+@click.argument('note', type=str)
+@click.option('-c', '--category')
+def r(note, category=None):
     """
-    Save notes to noots
+    Save a note to noots.
 
     category is optional and defaults to "General"
 
@@ -37,19 +59,28 @@ def remember(category, note):
     Saves the note to the General category
     """
     data = _yaml_r() or {}
+
+    if category is None:
+        category = 'General'
+
     try:
-        data[category].append(note[0])
+        if note not in data[category]:
+            data[category].append(note)
+        else:
+            click.echo("You've already made this note :)")
     except KeyError:
-        data[category] = [note[0]]
+        data[category] = [note]
+
     _yaml_w(data)
 
 
-def forget(category, index):
+@cli.command()
+@click.argument('category', type=str)
+@click.argument('index', type=int)
+def f(category, index):
     """
-    Deletes notes from noots
-    Removes empty categories
-
-    Specific category and index required.
+    Deletes notes from noots.
+    Removes empty categories.
 
     >>> noots forget General 2
     Forgets the note marked 2 in the General category
@@ -58,8 +89,7 @@ def forget(category, index):
     try:
         del data[category][index-1]
     except (KeyError, IndexError, TypeError):
-        print('There is no note {} {}'.format(category,
-                                              index))
+        click.echo('There is no note {} {}'.format(category, index))
         return
     else:
         if data[category] == []:
@@ -67,119 +97,69 @@ def forget(category, index):
     _yaml_w(data)
 
 
-def edit(category, index, note):
+@cli.command()
+@click.argument('category', type=str)
+@click.argument('index', type=int)
+@click.argument('note', type=str)
+def e(category, index, note):
     """
-    Allows replacment of note content
-    All args required
+    Replace a note.
 
     >>> noots edit General 2 "New note"
     Edits replaces the note at General 2 with "New note"
     """
     data = _yaml_r()
     try:
-        data[category][index-1] = note[0]
+        data[category][index-1] = note
     except KeyError:
-        print('There is no note {} {}'.format(category,
+        click.echo('There is no note {} {}'.format(category,
                                               index))
         return
     _yaml_w(data)
 
 
-def clear_all():
+@cli.command()
+def clear():
     """
     Deletes all notes from noots!
-
-             (o<= noot noot!
-             //\
-             V_/_
-
     """
-    print("These are your notes:")
+    click.echo("These are your notes:")
     show_notes()
     answer = input("Are you sure?(Y/N) > ")
-    if answer.lower().startswith('y'):
+    if answer.casefold().startswith('y'):
         _yaml_w({})
-        print("All of your notes have been deleted!")
+        click.echo("All of your notes have been deleted!")
     else:
-        print("Stuff not deleted.")
+        click.echo("Stuff not deleted.")
         return
 
 
-def noots_noots():
-    print('\n   (o<= noot noot!')
-    print('   //\\')
-    print('   V_/_\n')
+@cli.command()
+def noots():
+    click.secho('\n   (o< noot noot!', bold=True)
+    click.secho('   //\\', bold=True)
+    click.secho('   V_/_\n', bold=True)
 
 
 def _yaml_r():
     try:
-        with open(NOOTS_LOC, 'r') as noots_file:
+        with open(_NOOTS_LOC, 'r') as noots_file:
             return yaml.load(noots_file)
     except FileNotFoundError:
-        temp = open(NOOTS_LOC, 'w+')
-        temp.close()
+        with open(_NOOTS_LOC, 'w+'):
+            ...
         _yaml_r()
 
 
 def _yaml_w(data):
-    with open(NOOTS_LOC, 'w') as noots_file:
+    with open(_NOOTS_LOC, 'w') as noots_file:
         yaml.dump(data, noots_file, indent=4, default_flow_style=False)
 
 
+cli.add_command(r)
+cli.add_command(f)
+cli.add_command(e)
+cli.add_command(clear)
+
 if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser(
-    description="""
-    noots is a cli note taking thing for those who want
-    to view, add, remove and modify their notes quickly and from
-    any directory in their system through their terminal.
-
-    Read the docs at
-    """
-                                     )
-
-    subparsers = parser.add_subparsers(dest="sub_name")
-
-    show_parser = subparsers.add_parser('show')
-    show_parser.set_defaults(func='show')
-
-    remember_parser = subparsers.add_parser('r', help='remember')
-    remember_parser.add_argument('-c', '--category', default='General')
-    remember_parser.add_argument('note', nargs=argparse.ONE_OR_MORE)
-    remember_parser.set_defaults(func='remember')
-
-    forget_parser = subparsers.add_parser('f', help='forget')
-    forget_parser.add_argument('category')
-    forget_parser.add_argument('index', type=int)
-    forget_parser.set_defaults(func='forget')
-
-    edit_parser = subparsers.add_parser('e', help='edit')
-    edit_parser.add_argument('category', default='General')
-    edit_parser.add_argument('index', type=int)
-    edit_parser.add_argument('note', nargs=argparse.ONE_OR_MORE)
-    edit_parser.set_defaults(func='edit')
-
-    clear_parser = subparsers.add_parser('clear')
-    clear_parser.set_defaults(func='clear')
-
-    noots_parser = subparsers.add_parser('noots')
-    noots_parser.set_defaults(func='noots')
-
-    args = parser.parse_args()
-
-    if args.sub_name is None:
-        show_notes()
-    elif args.func == 'remember':
-        remember(args.category, args.note)
-
-    elif args.func == 'forget':
-        forget(args.category, args.index)
-
-    elif args.func == 'edit':
-        edit(args.category, args.index, args.note)
-
-    elif args.func == 'clear':
-        clear_all()
-
-    elif args.func == 'noots':
-        noots_noots()
+    cli()
